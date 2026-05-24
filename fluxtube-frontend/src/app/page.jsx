@@ -1,0 +1,220 @@
+"use client";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import Navbar from "../components/Navbar";
+import Sidebar from "../components/Sidebar";
+import ProtectedRoute from "../components/ProtectedRoute";
+import { MdVideoLibrary } from "react-icons/md";
+import { FaPlay, FaUpload } from "react-icons/fa";
+import api from "../lib/api";
+
+const avatarColors = ["#e53e3e","#7c3aed","#d97706","#0f6e56","#1d4ed8","#be185d"];
+
+function HomeContent() {
+  const router = useRouter();
+  const [videos, setVideos] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState(null);
+
+  useEffect(() => {
+    const stored = localStorage.getItem("fluxtubeUser");
+    if (stored) {
+      const user = JSON.parse(stored);
+      setCurrentUser(user);
+
+      api.get("/videos")
+        .then(({ data }) => {
+          // Only show videos uploaded by the logged-in user
+          const myVideos = data.filter(v =>
+            v.user?._id === user._id ||
+            v.user?.id === user._id ||
+            v.user === user._id
+          );
+          setVideos(myVideos);
+        })
+        .catch(() => setVideos([]))
+        .finally(() => setLoading(false));
+    } else {
+      setLoading(false);
+    }
+  }, []);
+
+  return (
+    <div style={{ minHeight: "100vh", background: "var(--bg)" }}>
+      <Navbar />
+      <div style={{ display: "flex" }}>
+        <Sidebar />
+        <main style={{ flex: 1, padding: "24px 28px", overflowX: "hidden" }}>
+
+          {/* Header */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "24px" }}>
+            <div>
+              <h1 style={{ fontSize: "22px", fontWeight: "700", color: "var(--text)", margin: 0 }}>My Videos</h1>
+              <p style={{ fontSize: "13px", color: "var(--text-muted)", marginTop: "4px" }}>
+                Videos you've uploaded to FluxTube
+              </p>
+            </div>
+            <button
+              onClick={() => router.push("/upload")}
+              style={{
+                display: "flex", alignItems: "center", gap: "8px",
+                padding: "10px 20px", borderRadius: "10px",
+                background: "#e53e3e", color: "#fff",
+                border: "none", fontWeight: "700", fontSize: "14px",
+                cursor: "pointer",
+              }}
+            >
+              <FaUpload size={13} /> Upload Video
+            </button>
+          </div>
+
+          {/* Loading */}
+          {loading && (
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "60px", flexDirection: "column", gap: "12px" }}>
+              <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+              <div style={{ width: "36px", height: "36px", border: "3px solid var(--border)", borderTop: "3px solid #e53e3e", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+              <p style={{ color: "var(--text-muted)", fontSize: "13px" }}>Loading your videos...</p>
+            </div>
+          )}
+
+          {/* Empty state */}
+          {!loading && videos.length === 0 && (
+            <div style={{ textAlign: "center", padding: "80px 20px" }}>
+              <MdVideoLibrary size={64} color="#e53e3e" style={{ marginBottom: "16px", opacity: 0.7 }} />
+              <p style={{ fontSize: "20px", fontWeight: "700", color: "var(--text)", marginBottom: "8px" }}>No videos yet</p>
+              <p style={{ fontSize: "14px", color: "var(--text-muted)", marginBottom: "24px" }}>
+                You haven't uploaded anything yet. Share your first video!
+              </p>
+              <button
+                onClick={() => router.push("/upload")}
+                style={{
+                  display: "inline-flex", alignItems: "center", gap: "8px",
+                  padding: "12px 28px", borderRadius: "10px",
+                  background: "#e53e3e", color: "#fff",
+                  border: "none", fontWeight: "700", fontSize: "15px",
+                  cursor: "pointer",
+                }}
+              >
+                <FaUpload size={14} /> Upload Your First Video
+              </button>
+            </div>
+          )}
+
+          {/* Video grid */}
+          {!loading && videos.length > 0 && (
+            <div style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+              gap: "18px 14px",
+            }}>
+              {videos.map((video, i) => {
+                const color = avatarColors[i % avatarColors.length];
+                const initial = (currentUser?.username || "U")[0].toUpperCase();
+
+                let thumb = video.thumbnailUrl;
+                if (!thumb) {
+                  const ytMatch = video.videoUrl?.match(/(?:embed\/|v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+                  if (ytMatch) thumb = `https://i.ytimg.com/vi/${ytMatch[1]}/hqdefault.jpg`;
+                }
+
+                return (
+                  <div
+                    key={video._id}
+                    onClick={() => router.push(`/video/${video._id}`)}
+                    style={{ cursor: "pointer" }}
+                  >
+                    <div style={{
+                      position: "relative", width: "100%", aspectRatio: "16/9",
+                      borderRadius: "10px", overflow: "hidden",
+                      background: "#e53e3e22", border: "1px solid var(--border)",
+                    }}>
+                      {thumb ? (
+                        <img
+                          src={thumb}
+                          alt={video.title}
+                          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                          onError={e => { e.target.style.display = "none"; }}
+                        />
+                      ) : (
+                        <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                          <MdVideoLibrary size={32} color="#e53e3e" />
+                        </div>
+                      )}
+                      <div
+                        style={{
+                          position: "absolute", inset: 0, display: "flex",
+                          alignItems: "center", justifyContent: "center",
+                          background: "rgba(0,0,0,0.15)", opacity: 0, transition: "opacity 0.2s",
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.opacity = "1"}
+                        onMouseLeave={e => e.currentTarget.style.opacity = "0"}
+                      >
+                        <div style={{
+                          width: "48px", height: "48px", borderRadius: "50%",
+                          background: "rgba(0,0,0,0.7)", display: "flex",
+                          alignItems: "center", justifyContent: "center",
+                        }}>
+                          <FaPlay size={18} color="#fff" style={{ marginLeft: "3px" }} />
+                        </div>
+                      </div>
+
+                      {/* Visibility badge */}
+                      {video.visibility && video.visibility !== "public" && (
+                        <div style={{
+                          position: "absolute", top: "7px", left: "7px",
+                          background: "rgba(0,0,0,0.75)", color: "#fff",
+                          fontSize: "10px", fontWeight: "700",
+                          padding: "2px 7px", borderRadius: "4px",
+                          textTransform: "capitalize",
+                        }}>
+                          {video.visibility}
+                        </div>
+                      )}
+                    </div>
+
+                    <div style={{ display: "flex", gap: "10px", marginTop: "10px", alignItems: "flex-start" }}>
+                      <div style={{
+                        width: "34px", height: "34px", borderRadius: "50%",
+                        background: color, flexShrink: 0,
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        color: "#fff", fontSize: "13px", fontWeight: "700",
+                      }}>
+                        {initial}
+                      </div>
+                      <div>
+                        <p style={{
+                          fontSize: "13px", fontWeight: "700", lineHeight: "1.35",
+                          color: "var(--text)", margin: 0,
+                          display: "-webkit-box", WebkitLineClamp: 2,
+                          WebkitBoxOrient: "vertical", overflow: "hidden",
+                        }}>
+                          {video.title}
+                        </p>
+                        <p style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "3px" }}>
+                          {currentUser?.username || "You"}
+                        </p>
+                        {video.views > 0 && (
+                          <p style={{ fontSize: "12px", color: "var(--text-muted)", margin: 0 }}>
+                            {video.views} views
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </main>
+      </div>
+    </div>
+  );
+}
+
+export default function HomePage() {
+  return (
+    <ProtectedRoute pageName="FluxTube">
+      <HomeContent />
+    </ProtectedRoute>
+  );
+}

@@ -4,15 +4,27 @@ import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-// Replace this with your actual auth context/hook
-// import { useAuth } from "@/context/AuthContext";
-
+/**
+ * ProfileDropdown Component
+ * Shows a user avatar button that opens a dropdown menu on hover/tap.
+ * - Desktop: hover to open, positioned absolutely below avatar
+ * - Mobile: tap to toggle, dropdown stretches full width from right edge
+ */
 export default function ProfileDropdown({ user, onLogout }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false); // Track viewport size
   const dropdownRef = useRef(null);
   const router = useRouter();
 
-  // Close dropdown when clicking outside
+  // ── Detect mobile viewport ──
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 640);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
+  // ── Close dropdown when clicking/tapping outside ──
   useEffect(() => {
     function handleClickOutside(e) {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
@@ -20,56 +32,73 @@ export default function ProfileDropdown({ user, onLogout }) {
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+    };
   }, []);
 
   const handleLogout = () => {
     setIsOpen(false);
     if (onLogout) onLogout();
-    // e.g. signOut(), clearToken(), etc.
     router.push("/login");
   };
 
-  // Get user initial for avatar
+  // ── Get first letter of user's name for avatar placeholder ──
   const initial = user?.name?.charAt(0)?.toUpperCase() || "N";
+
+  // ── On desktop: open on hover. On mobile: toggle on tap only ──
+  const hoverProps = isMobile ? {} : {
+    onMouseEnter: () => setIsOpen(true),
+    onMouseLeave: () => setIsOpen(false),
+  };
 
   return (
     <div
-      className="profile-dropdown-wrapper"
+      className="pd-wrapper"
       ref={dropdownRef}
-      onMouseEnter={() => setIsOpen(true)}
-      onMouseLeave={() => setIsOpen(false)}
+      {...hoverProps}
     >
-      {/* Profile Icon Button */}
-      <button className="profile-icon-btn" aria-label="Profile menu">
+      {/* ── Avatar button — toggles dropdown on mobile tap ── */}
+      <button
+        className="pd-icon-btn"
+        aria-label="Profile menu"
+        aria-expanded={isOpen}
+        onClick={() => isMobile && setIsOpen(p => !p)}
+      >
         {user?.avatar ? (
-          <img src={user.avatar} alt={user.name} className="profile-avatar-img" />
+          <img src={user.avatar} alt={user.name} className="pd-avatar-img" />
         ) : (
-          <div className="profile-avatar-placeholder">{initial}</div>
+          <div className="pd-avatar-placeholder">{initial}</div>
         )}
       </button>
 
-      {/* Dropdown Menu */}
-      <div className={`profile-dropdown-menu ${isOpen ? "open" : ""}`}>
-        {/* User Info Header */}
-        <div className="dropdown-header">
-          <div className="dropdown-avatar">
+      {/* ── Dropdown menu ── */}
+      <div className={`pd-menu ${isOpen ? "pd-menu--open" : ""}`}>
+
+        {/* Arrow pointer — hidden on mobile (full width panel) */}
+        <div className="pd-arrow" />
+
+        {/* User info header */}
+        <div className="pd-header">
+          <div className="pd-header-avatar">
             {user?.avatar ? (
               <img src={user.avatar} alt={user.name} />
             ) : (
-              <div className="dropdown-avatar-placeholder">{initial}</div>
+              <div className="pd-header-placeholder">{initial}</div>
             )}
           </div>
-          <div className="dropdown-user-info">
-            <p className="dropdown-username">{user?.name || "Guest"}</p>
-            <p className="dropdown-email">{user?.email || ""}</p>
+          <div className="pd-user-info">
+            <p className="pd-username">{user?.name || "Guest"}</p>
+            <p className="pd-email">{user?.email || ""}</p>
           </div>
         </div>
 
-        <div className="dropdown-divider" />
+        <div className="pd-divider" />
 
-        {/* Menu Items */}
-        <Link href="/profile" className="dropdown-item" onClick={() => setIsOpen(false)}>
+        {/* ── Menu items ── */}
+        <Link href="/profile" className="pd-item" onClick={() => setIsOpen(false)}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
             <circle cx="12" cy="7" r="4" />
@@ -77,7 +106,7 @@ export default function ProfileDropdown({ user, onLogout }) {
           Your Profile
         </Link>
 
-        <Link href="/upload" className="dropdown-item" onClick={() => setIsOpen(false)}>
+        <Link href="/upload" className="pd-item" onClick={() => setIsOpen(false)}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <polyline points="16 16 12 12 8 16" />
             <line x1="12" y1="12" x2="12" y2="21" />
@@ -86,7 +115,7 @@ export default function ProfileDropdown({ user, onLogout }) {
           Upload Video
         </Link>
 
-        <Link href="/subscriptions" className="dropdown-item" onClick={() => setIsOpen(false)}>
+        <Link href="/subscriptions" className="pd-item" onClick={() => setIsOpen(false)}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
             <path d="M13.73 21a2 2 0 0 1-3.46 0" />
@@ -94,7 +123,7 @@ export default function ProfileDropdown({ user, onLogout }) {
           Subscriptions
         </Link>
 
-        <Link href="/activity-dashboard" className="dropdown-item" onClick={() => setIsOpen(false)}>
+        <Link href="/activity-dashboard" className="pd-item" onClick={() => setIsOpen(false)}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <line x1="18" y1="20" x2="18" y2="10" />
             <line x1="12" y1="20" x2="12" y2="4" />
@@ -103,9 +132,10 @@ export default function ProfileDropdown({ user, onLogout }) {
           Activity Dashboard
         </Link>
 
-        <div className="dropdown-divider" />
+        <div className="pd-divider" />
 
-        <button className="dropdown-item logout-item" onClick={handleLogout}>
+        {/* Logout button */}
+        <button className="pd-item pd-item--logout" onClick={handleLogout}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
             <polyline points="16 17 21 12 16 7" />
@@ -116,14 +146,15 @@ export default function ProfileDropdown({ user, onLogout }) {
       </div>
 
       <style jsx>{`
-        .profile-dropdown-wrapper {
+        /* ── Wrapper ── */
+        .pd-wrapper {
           position: relative;
           display: inline-flex;
           align-items: center;
         }
 
-        /* Profile Icon */
-        .profile-icon-btn {
+        /* ── Avatar button ── */
+        .pd-icon-btn {
           background: none;
           border: none;
           cursor: pointer;
@@ -132,16 +163,19 @@ export default function ProfileDropdown({ user, onLogout }) {
           display: flex;
           align-items: center;
           justify-content: center;
+          /* Larger tap target on mobile */
+          min-width: 36px;
+          min-height: 36px;
         }
 
-        .profile-avatar-img {
+        .pd-avatar-img {
           width: 36px;
           height: 36px;
           border-radius: 50%;
           object-fit: cover;
         }
 
-        .profile-avatar-placeholder {
+        .pd-avatar-placeholder {
           width: 36px;
           height: 36px;
           border-radius: 50%;
@@ -156,35 +190,36 @@ export default function ProfileDropdown({ user, onLogout }) {
           box-shadow: 0 0 0 2px #cc0000;
         }
 
-        /* Dropdown */
-        .profile-dropdown-menu {
-          position: absolute;
-          top: calc(100% + 8px);
+        /* ── Dropdown panel ── */
+        .pd-menu {
+          position: fixed;
+          top: 56px; /* Sits just below the navbar */
           right: 0;
-          width: 240px;
+          /* Desktop: fixed 240px. Mobile: full viewport width */
+          width: min(240px, 100vw);
           background: #fff;
-          border-radius: 12px;
-          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15), 0 2px 8px rgba(0, 0, 0, 0.08);
+          border-radius: 0 0 14px 14px;
+          box-shadow: 0 8px 32px rgba(0,0,0,0.15), 0 2px 8px rgba(0,0,0,0.08);
           border: 1px solid #e8e8e8;
           padding: 8px 0;
           z-index: 1000;
 
-          /* Animation */
+          /* Hidden by default — animated in when .pd-menu--open is added */
           opacity: 0;
           transform: translateY(-8px) scale(0.97);
           pointer-events: none;
           transition: opacity 0.18s ease, transform 0.18s ease;
         }
 
-        .profile-dropdown-menu.open {
+        /* Open state */
+        .pd-menu--open {
           opacity: 1;
           transform: translateY(0) scale(1);
           pointer-events: all;
         }
 
-        /* Arrow pointer */
-        .profile-dropdown-menu::before {
-          content: "";
+        /* ── Arrow pointer — hidden on mobile (full-width panel) ── */
+        .pd-arrow {
           position: absolute;
           top: -6px;
           right: 10px;
@@ -197,26 +232,26 @@ export default function ProfileDropdown({ user, onLogout }) {
           border-radius: 2px 0 0 0;
         }
 
-        /* Header */
-        .dropdown-header {
+        /* ── Header section ── */
+        .pd-header {
           display: flex;
           align-items: center;
           gap: 12px;
           padding: 12px 16px 10px;
         }
 
-        .dropdown-avatar {
+        .pd-header-avatar {
           flex-shrink: 0;
         }
 
-        .dropdown-avatar img {
+        .pd-header-avatar img {
           width: 40px;
           height: 40px;
           border-radius: 50%;
           object-fit: cover;
         }
 
-        .dropdown-avatar-placeholder {
+        .pd-header-placeholder {
           width: 40px;
           height: 40px;
           border-radius: 50%;
@@ -229,11 +264,12 @@ export default function ProfileDropdown({ user, onLogout }) {
           justify-content: center;
         }
 
-        .dropdown-user-info {
+        .pd-user-info {
           overflow: hidden;
+          min-width: 0;
         }
 
-        .dropdown-username {
+        .pd-username {
           font-weight: 600;
           font-size: 14px;
           color: #111;
@@ -243,7 +279,7 @@ export default function ProfileDropdown({ user, onLogout }) {
           margin: 0;
         }
 
-        .dropdown-email {
+        .pd-email {
           font-size: 12px;
           color: #666;
           white-space: nowrap;
@@ -252,19 +288,20 @@ export default function ProfileDropdown({ user, onLogout }) {
           margin: 2px 0 0;
         }
 
-        /* Divider */
-        .dropdown-divider {
+        /* ── Divider ── */
+        .pd-divider {
           height: 1px;
           background: #f0f0f0;
           margin: 6px 0;
         }
 
-        /* Items */
-        .dropdown-item {
+        /* ── Menu items ── */
+        .pd-item {
           display: flex;
           align-items: center;
           gap: 12px;
-          padding: 10px 16px;
+          /* Taller padding on mobile for easier tapping */
+          padding: 11px 16px;
           font-size: 14px;
           color: #222;
           text-decoration: none;
@@ -273,30 +310,67 @@ export default function ProfileDropdown({ user, onLogout }) {
           border: none;
           width: 100%;
           text-align: left;
-          transition: background 0.12s ease;
-          border-radius: 0;
+          transition: background 0.12s ease, color 0.12s ease;
         }
 
-        .dropdown-item:hover {
+        .pd-item:hover,
+        .pd-item:focus-visible {
           background: #f5f5f5;
+          color: #cc0000;
+          outline: none;
+        }
+
+        /* Active state for touch — gives visual feedback on tap */
+        .pd-item:active {
+          background: #fce8e8;
           color: #cc0000;
         }
 
-        .dropdown-item svg {
+        .pd-item svg {
           width: 18px;
           height: 18px;
           flex-shrink: 0;
           stroke: currentColor;
         }
 
-        .logout-item {
+        /* Logout item has red text by default */
+        .pd-item--logout {
           color: #cc0000;
           font-weight: 500;
         }
 
-        .logout-item:hover {
+        .pd-item--logout:hover {
           background: #fff0f0;
           color: #aa0000;
+        }
+
+        /* ── Mobile overrides ── */
+        @media (max-width: 639px) {
+          /* Full-width panel on mobile */
+          .pd-menu {
+            width: 100vw;
+            border-radius: 0 0 16px 16px;
+            /* Slightly larger text and padding for easier tapping */
+          }
+
+          /* Hide the arrow pointer — doesn't make sense on full-width panel */
+          .pd-arrow {
+            display: none;
+          }
+
+          /* Bigger tap targets on mobile */
+          .pd-item {
+            padding: 14px 20px;
+            font-size: 15px;
+          }
+
+          .pd-header {
+            padding: 16px 20px 12px;
+          }
+
+          .pd-username {
+            font-size: 15px;
+          }
         }
       `}</style>
     </div>

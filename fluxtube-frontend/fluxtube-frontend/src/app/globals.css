@@ -1,0 +1,61 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #ffffff;
+  --bg-secondary: #f9f9f9;
+  --card: #ffffff;
+  --text: #111111;
+  --text-muted: #606060;
+  --border: #e5e5e5;
+  --chip-bg: #f2f2f2;
+  --chip-text: #111111;
+  --search-border: #cccccc;
+  --nav-bg: #ffffff;
+  --sidebar-bg: #e53e3e;
+  --sidebar-text: #ffffff;
+  --sidebar-hover: rgba(0,0,0,0.15);
+  --sidebar-active: rgba(0,0,0,0.2);
+}
+
+[data-theme="dark"] {
+  --bg: #0f0f0f;
+  --bg-secondary: #1a1a1a;
+  --card: #1a1a1a;
+  --text: #f1f1f1;
+  --text-muted: #aaaaaa;
+  --border: #2a2a2a;
+  --chip-bg: #272727;
+  --chip-text: #f1f1f1;
+  --search-border: #444444;
+  --nav-bg: #0f0f0f;
+  --sidebar-bg: #8b0000;
+  --sidebar-text: #ffffff;
+  --sidebar-hover: rgba(255,255,255,0.1);
+  --sidebar-active: rgba(255,255,255,0.15);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: Arial, Helvetica, sans-serif;
+  transition: background 0.3s ease, color 0.3s ease;
+  padding-top: 56px;
+}
+
+/* Voice search animation */
+@keyframes pulse-mic {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(229,62,62,0.4); }
+  50% { box-shadow: 0 0 0 8px rgba(229,62,62,0); }
+}
+.mic-listening {
+  animation: pulse-mic 1s ease infinite;
+  background: #e53e3e !important;
+}

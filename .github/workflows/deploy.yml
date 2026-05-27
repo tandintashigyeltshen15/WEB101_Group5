@@ -1,0 +1,39 @@
+name: CI/CD Pipeline - FluxTube
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install backend dependencies
+        run: |
+          cd fluxtube-backend
+          npm install
+
+      - name: Install frontend dependencies
+        run: |
+          cd fluxtube-frontend
+          npm install
+
+      - name: Build frontend
+        run: |
+          cd fluxtube-frontend
+          npm run build
+
+      - name: Deploy backend to Render
+        run: curl -X POST "${{ secrets.RENDER_BACKEND_HOOK }}"
+
+      - name: Deploy frontend to Render
+        run: curl -X POST "${{ secrets.RENDER_FRONTEND_HOOK }}"

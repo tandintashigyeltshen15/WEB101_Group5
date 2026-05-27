@@ -1,7 +1,7 @@
 "use client";
 import { createContext, useContext, useEffect, useState } from "react";
 
-const ThemeContext = createContext();
+const ThemeContext = createContext({ darkMode: false, toggleTheme: () => {} });
 
 export function ThemeProvider({ children }) {
   const [darkMode, setDarkMode] = useState(false);
@@ -24,5 +24,9 @@ export function ThemeProvider({ children }) {
 }
 
 export function useTheme() {
-  return useContext(ThemeContext);
+  const context = useContext(ThemeContext);
+  if (!context) {
+    return { darkMode: false, toggleTheme: () => {} };
+  }
+  return context;
 }

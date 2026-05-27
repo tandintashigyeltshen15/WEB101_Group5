@@ -7,3 +7,5 @@
 3. Kuenzang Dolkar
 4. Tshewang Lhamo
 5. Ugyen Dorji
+
+## CI/CD Pipeline active ✓
